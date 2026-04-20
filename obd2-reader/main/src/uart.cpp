@@ -1,6 +1,66 @@
-class Uart 
+#include "../include/uart.h"
+#include <cstdio>
+#include <cstring>
+#include <cstddef>
+
+extern "C"
 {
-	private:
-	
-	public:
+	#include "soc/gpio_num.h"
+	#include "driver/gpio.h"
+	#include "driver/uart.h"
+	#include "freertos/idf_additions.h"
+	#include "hal/uart_types.h"
+	#include "esp_err.h"
 }
+
+Uart::Uart(gpio_num_t tx, gpio_num_t rx, gpio_num_t rts, gpio_num_t cts) 
+	: m_tx { tx }
+	, m_rx { rx }
+	, m_rts { rts }
+	, m_cts { cts }
+{}
+
+void Uart::setup
+(
+	uart_port_t uart_num,
+	int baudrate,
+	uart_word_length_t data_bits,
+	uart_parity_t parity,
+	uart_stop_bits_t stop_bits,
+	uart_hw_flowcontrol_t flow_ctrl,
+	uint8_t rx_flow_ctrl_thresh
+)
+{
+	m_uart_num = uart_num;
+
+	ESP_ERROR_CHECK(uart_driver_install(m_uart_num, UART_BUFFER_SIZE, UART_BUFFER_SIZE, 10, &m_uart_queue, 0));
+
+	m_uart_config = {
+		.baud_rate = baudrate,
+		.data_bits = data_bits,
+		.parity = parity,
+		.stop_bits = stop_bits,
+		.flow_ctrl = flow_ctrl,
+		.rx_flow_ctrl_thresh = rx_flow_ctrl_thresh,
+	};
+
+	ESP_ERROR_CHECK(uart_param_config(m_uart_num, &m_uart_config));
+
+	ESP_ERROR_CHECK(uart_set_pin(m_uart_num, m_tx, m_rx, m_rts, m_cts));
+}
+
+void Uart::send(const char *data) const
+{
+	uart_write_bytes(m_uart_num, data, strlen(data));
+}
+
+void Uart::receive(char *buffer)
+{
+	std::size_t length = 0;
+	ESP_ERROR_CHECK(uart_get_buffered_data_len(m_uart_num, &length));
+
+	uart_read_bytes(m_uart_num, &buffer, length, 100);
+}		
+
+
+
