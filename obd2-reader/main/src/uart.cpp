@@ -1,4 +1,5 @@
 #include "../include/uart.h"
+
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -49,12 +50,17 @@ void Uart::setup
 	ESP_ERROR_CHECK(uart_set_pin(m_uart_num, m_tx, m_rx, m_rts, m_cts));
 }
 
-void Uart::send(const uint8_t *data, size_t size) const
+void Uart::printf(const char *fmt, ...) const
 {
-	uart_write_bytes(m_uart_num, data, size);
+    char buf[256];
+    va_list args;
+    va_start(args, fmt);
+    int len = vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    uart_write_bytes(m_uart_num, buf, len);
 }
 
-void Uart::receive(uint8_t *buffer)
+void Uart::read(uint8_t *buffer)
 {
 	std::size_t length = 0;
 	ESP_ERROR_CHECK(uart_get_buffered_data_len(m_uart_num, &length));

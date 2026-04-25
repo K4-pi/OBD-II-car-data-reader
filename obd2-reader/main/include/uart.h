@@ -44,8 +44,8 @@ class Uart
 			uart_hw_flowcontrol_t flow_ctrl,
 			uint8_t rx_flow_ctrl_thresh
 		);
-		void send(const uint8_t *data, size_t size) const;
-		void receive(uint8_t *buffer);
+		void printf(const char *fmt, ...) const;
+		void read(uint8_t *buffer);
 };
 
 #endif

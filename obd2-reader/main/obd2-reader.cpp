@@ -1,5 +1,6 @@
 #include "include/uart.h"
 #include "include/obd2.h"
+#include "include/pids_obd2.h"
 
 #include <cstdint>
 #include <cstring>
@@ -39,20 +40,27 @@ void app_main(void)
 
 	Obd2 obd2(CAN_TX, CAN_RX, uart);
 
-	if (!obd2.setup()) uart.send((const uint8_t *)("Failed to initalize CAN driver\n"), 31);
-	else uart.send((const uint8_t *)("CAN initialized\n"), 16);
+	if (!obd2.setup()) uart.printf("Failed to initalize CAN driver\n");
+	else uart.printf("CAN initialized\n");
 
 	while (1) 
 	{
-		vTaskDelay(pdMS_TO_TICKS(750));
+		vTaskDelay(pdMS_TO_TICKS(1000));
+
+		//uint8_t send_buf1[] = { 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+		obd2.send(0x7E0, ENGINE_SPEED, 8);
+
+		vTaskDelay(pdMS_TO_TICKS(500));
 
 		//uint8_t tester_present[] = { 0x02, 0x3E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 		//can.send(0x7DF, tester_present, 8);
 
 		// then send your OBD-II request
-		uint8_t send_buf[] = { 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-		obd2.send(0x7DF, send_buf, 8); // 11-bit ide 
-		
+		// uint8_t send_buf2[] = { 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+		obd2.send(0x7E0, VEHICLE_SPEED, 8); // 11-bit ide 
+	  // 0x7DF
+
+
 		// can.send(0x18DB33F1, send_buf, 8); // 29-bit ide
    
 	}
