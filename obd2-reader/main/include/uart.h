@@ -16,9 +16,10 @@ extern "C"
 class Uart 
 {
 	private:
+		static constexpr int UART_BUFFER_SIZE = 2048;
+
 		gpio_num_t m_tx, m_rx, m_rts, m_cts;
 
-    static constexpr int UART_BUFFER_SIZE = 2048;
 		QueueHandle_t m_uart_queue;
 		uart_port_t m_uart_num;
 
@@ -43,8 +44,8 @@ class Uart
 			uart_hw_flowcontrol_t flow_ctrl,
 			uint8_t rx_flow_ctrl_thresh
 		);
-		void send(const char *data) const;
-		void receive(char *buffer);
+		void send(const uint8_t *data, size_t size) const;
+		void receive(uint8_t *buffer);
 };
 
 #endif

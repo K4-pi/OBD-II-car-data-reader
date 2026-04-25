@@ -1,4 +1,5 @@
 #include "../include/uart.h"
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <cstddef>
@@ -35,26 +36,25 @@ void Uart::setup
 
 	ESP_ERROR_CHECK(uart_driver_install(m_uart_num, UART_BUFFER_SIZE, UART_BUFFER_SIZE, 10, &m_uart_queue, 0));
 
-	m_uart_config = {
-		.baud_rate = baudrate,
-		.data_bits = data_bits,
-		.parity = parity,
-		.stop_bits = stop_bits,
-		.flow_ctrl = flow_ctrl,
-		.rx_flow_ctrl_thresh = rx_flow_ctrl_thresh,
-	};
+	m_uart_config = {};
+	m_uart_config.baud_rate = baudrate;
+	m_uart_config.data_bits = data_bits;
+	m_uart_config.parity = parity;
+	m_uart_config.stop_bits = stop_bits;
+	m_uart_config.flow_ctrl = flow_ctrl;
+	m_uart_config.rx_flow_ctrl_thresh = rx_flow_ctrl_thresh;
 
 	ESP_ERROR_CHECK(uart_param_config(m_uart_num, &m_uart_config));
 
 	ESP_ERROR_CHECK(uart_set_pin(m_uart_num, m_tx, m_rx, m_rts, m_cts));
 }
 
-void Uart::send(const char *data) const
+void Uart::send(const uint8_t *data, size_t size) const
 {
-	uart_write_bytes(m_uart_num, data, strlen(data));
+	uart_write_bytes(m_uart_num, data, size);
 }
 
-void Uart::receive(char *buffer)
+void Uart::receive(uint8_t *buffer)
 {
 	std::size_t length = 0;
 	ESP_ERROR_CHECK(uart_get_buffered_data_len(m_uart_num, &length));
