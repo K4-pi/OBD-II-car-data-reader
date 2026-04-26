@@ -85,34 +85,60 @@ static void rx_task(void *arg)
 			uint8_t A = rx_frame.buffer[3];
 			uint8_t B = rx_frame.buffer[4];
 			uint8_t C = rx_frame.buffer[5];
+			uint8_t D = rx_frame.buffer[6];
+			uint8_t E = rx_frame.buffer[7];
 
 			int value; 
 
 			switch (rx_frame.buffer[2]) 
 			{
-				case ENGINE_SPEED[2]:
+				case ENGINE_SPEED:
 					value = (256*A + B) / 4;
 					self->m_uart.printf("ENGINE_SPEED=%d", value);
 					break;
 
-				case ENGINE_LOAD[2]:
+				case ENGINE_LOAD:
 					value = (100*A) / 255;
 					self->m_uart.printf("ENGINE_LOAD=%d", value);
 					break;
 
-				case VEHICLE_SPEED[2]:
+				case VEHICLE_SPEED:
 					value = A;
 					self->m_uart.printf("VEHICLE_SPEED=%d", value);
 					break;
 
-				case COOLANT_TEMP[2]:
+				case COOLANT_TEMP:
 					value = A - 40;
 					self->m_uart.printf("COOLANT_TEMP=%d", value);
 					break;
 
-				case FUEL_PRESSURE[2]:
+				case FUEL_PRESSURE:
 					value = 3*A;
 					self->m_uart.printf("FUEL_PRESSURE=%d", value);
+					break;
+
+				case FUEL_TRIM_STFT1:
+					value = (100*A) / 128 - 100;
+					self->m_uart.printf("STFT1=%d", value);
+					break;
+
+				case FUEL_TRIM_STFT2:
+					value = (100*A) / 128 - 100;
+					self->m_uart.printf("STFT1=%d", value);
+					break;
+
+				case FUEL_TRIM_LTFT1:
+					value = (100*A) / 128 - 100;
+					self->m_uart.printf("STFT1=%d", value);
+					break;
+	
+				case FUEL_TRIM_LTFT2:
+					value = (100*A) / 128 - 100;
+					self->m_uart.printf("STFT1=%d", value);
+					break;	
+
+				case ENGINE_PERECENT_TORQUE:
+					self->m_uart.printf("ENGINE_PERECENT_TORQUE=%d,%d,%d,%d,%d", A-125, B-125, C-125, D-125, E-125);	
 					break;
 
 				default:
