@@ -45,10 +45,10 @@ void app_main(void)
 
 	while (1) 
 	{
-		vTaskDelay(pdMS_TO_TICKS(1000));
+		vTaskDelay(pdMS_TO_TICKS(500));
 
 		//uint8_t send_buf1[] = { 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-		obd2.send(0x7E0, ENGINE_SPEED, 8);
+		obd2.send(0x7DF, ENGINE_SPEED, 8);
 
 		vTaskDelay(pdMS_TO_TICKS(500));
 
@@ -57,11 +57,18 @@ void app_main(void)
 
 		// then send your OBD-II request
 		// uint8_t send_buf2[] = { 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-		obd2.send(0x7E0, VEHICLE_SPEED, 8); // 11-bit ide 
+		obd2.send(0x7DF, VEHICLE_SPEED, 8); // 11-bit ide 
 	  // 0x7DF
 
+		vTaskDelay(pdMS_TO_TICKS(500));
+		obd2.send(0x7DF, COOLANT_TEMP, 8);
 
 		// can.send(0x18DB33F1, send_buf, 8); // 29-bit ide
-   
+
+		vTaskDelay(pdMS_TO_TICKS(500));
+		obd2.send(0x7DF, FUEL_PRESSURE, 8);
+
+		vTaskDelay(pdMS_TO_TICKS(500));
+		obd2.send(0x7DF, ENGINE_LOAD, 8);
 	}
 }

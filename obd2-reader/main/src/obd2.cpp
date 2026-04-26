@@ -82,23 +82,40 @@ static void rx_task(void *arg)
 		{
 			ESP_DRAM_LOGI("CAN", "ID: 0x%03lX len: %d", rx_frame.header.id, rx_frame.buffer_len);
 
-			uint8_t value;
+			uint8_t A = rx_frame.buffer[3];
+			uint8_t B = rx_frame.buffer[4];
+			uint8_t C = rx_frame.buffer[5];
+
+			int value; 
 
 			switch (rx_frame.buffer[2]) 
 			{
 				case ENGINE_SPEED[2]:
-					//esp_rom_printf("ENGINE_SPEED");
-					value = (256 * rx_frame.buffer[3] + rx_frame.buffer[4]) / 4;
+					value = (256*A + B) / 4;
 					self->m_uart.printf("ENGINE_SPEED=%d", value);
 					break;
 
+				case ENGINE_LOAD[2]:
+					value = (100*A) / 255;
+					self->m_uart.printf("ENGINE_LOAD=%d", value);
+					break;
+
 				case VEHICLE_SPEED[2]:
-					value = rx_frame.buffer[3];
+					value = A;
 					self->m_uart.printf("VEHICLE_SPEED=%d", value);
 					break;
 
+				case COOLANT_TEMP[2]:
+					value = A - 40;
+					self->m_uart.printf("COOLANT_TEMP=%d", value);
+					break;
+
+				case FUEL_PRESSURE[2]:
+					value = 3*A;
+					self->m_uart.printf("FUEL_PRESSURE=%d", value);
+					break;
+
 				default:
-					value = 0;
 					self->m_uart.printf("ERR=No matching PID");
 					break;
 			}
@@ -130,7 +147,7 @@ bool Obd2::setup()
 
 	m_obd2_rx_queue_hdl = xQueueCreate(16, sizeof(twai_frame_t)); // Create queue for receiving data 	
 
-	xTaskCreate(rx_task, "obd2_RX", 4096, this, 5, NULL);
+	xTaskCreate(rx_task, "obd2_RX", 4096, this, 5, NULL); // 4096 words -> 16KB
 
   return true;
 }
