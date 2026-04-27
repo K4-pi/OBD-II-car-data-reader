@@ -7,30 +7,30 @@
 
 extern "C"
 {
-  #include "portmacro.h"
-  #include "esp_rom_sys.h"
-  #include "freertos/idf_additions.h"
-  #include "soc/gpio_num.h"
-  #include "esp_err.h"
+	#include "portmacro.h"
+	#include "esp_rom_sys.h"
+	#include "freertos/idf_additions.h"
+	#include "soc/gpio_num.h"
+	#include "esp_err.h"
 	#include "esp_twai.h"
 	#include "esp_twai_onchip.h"
-  #include "esp_twai_types.h"
-  #include "esp_log.h"
+	#include "esp_twai_types.h"
+	#include "esp_log.h"
 }
 
 Obd2::Obd2(gpio_num_t tx, gpio_num_t rx, Uart uart)
-  : m_tx { tx }
-  , m_rx { rx }
+	: m_tx { tx }
+	, m_rx { rx }
 	, m_uart { uart }
 {}
 
 static bool twai_rx_callback(twai_node_handle_t handle, const twai_rx_done_event_data_t *edata, void *user_ctx)
 {
-  uint8_t recv_buff[8];
+	uint8_t recv_buff[8];
 
-  twai_frame_t rx_frame = {};
-  rx_frame.buffer = recv_buff;
-  rx_frame.buffer_len = 8;
+	twai_frame_t rx_frame = {};
+	rx_frame.buffer = recv_buff;
+	rx_frame.buffer_len = 8;
 
 	Obd2 *self = static_cast<Obd2 *>(user_ctx);
 
@@ -38,7 +38,7 @@ static bool twai_rx_callback(twai_node_handle_t handle, const twai_rx_done_event
 	{
 		if (rx_frame.header.id != 0x7E8) return false;
 
-    BaseType_t higher_prio_woken = pdFALSE;
+		BaseType_t higher_prio_woken = pdFALSE;
 		xQueueSendFromISR(self->m_obd2_rx_queue_hdl, &rx_frame, &higher_prio_woken);
 
 		return higher_prio_woken == pdTRUE;
@@ -49,8 +49,6 @@ static bool twai_rx_callback(twai_node_handle_t handle, const twai_rx_done_event
 
 void Obd2::send(uint32_t id, const uint8_t *buffer, uint8_t len)
 {
-	// ESP_LOGI("CAN", "sending ID: 0x%03lX", id);
-
 	twai_frame_t msg = {};
 	msg.header.id = id;
 	msg.header.ide = false; // true = 29-bit, false = 11-bit
@@ -73,7 +71,7 @@ void Obd2::send(uint32_t id, const uint8_t *buffer, uint8_t len)
 
 static void rx_task(void *arg)
 {
-  Obd2 *self = static_cast<Obd2 *>(arg);
+	Obd2 *self = static_cast<Obd2 *>(arg);
 	twai_frame_t rx_frame;
 
 	while (1)

@@ -7,12 +7,12 @@
 
 extern "C"
 {
-	#include "soc/gpio_num.h"
-	#include "driver/gpio.h"
-	#include "driver/uart.h"
-	#include "freertos/idf_additions.h"
-	#include "hal/uart_types.h"
-	#include "esp_err.h"
+  #include "soc/gpio_num.h"
+  #include "driver/gpio.h"
+  #include "driver/uart.h"
+  #include "freertos/idf_additions.h"
+  #include "hal/uart_types.h"
+  #include "esp_err.h"
 }
 
 Uart::Uart(gpio_num_t tx, gpio_num_t rx, gpio_num_t rts, gpio_num_t cts) 
@@ -52,12 +52,12 @@ void Uart::setup
 
 void Uart::printf(const char *fmt, ...) const
 {
-    char buf[256];
-    va_list args;
-    va_start(args, fmt);
-    int len = vsnprintf(buf, sizeof(buf), fmt, args);
-    va_end(args);
-    uart_write_bytes(m_uart_num, buf, len);
+  char buf[256];
+  va_list args;
+  va_start(args, fmt);
+  int len = vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+  uart_write_bytes(m_uart_num, buf, len);
 }
 
 void Uart::read(uint8_t *buffer)
