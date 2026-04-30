@@ -7,6 +7,8 @@ constexpr uint16_t IDE_11_BIT = 0x7DF;
 constexpr uint32_t IDE_29_BIT = 0x18DB33F1;
 
 // SERVICE MODE (0x01)
+constexpr uint8_t CHECK_PIDS    = 0x00;
+
 constexpr uint8_t ENGINE_SPEED  = 0x0C;
 constexpr uint8_t ENGINE_LOAD   = 0x04;
 constexpr uint8_t VEHICLE_SPEED = 0x0D;
