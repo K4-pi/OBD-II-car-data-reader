@@ -49,7 +49,7 @@ void app_main(void)
 
 		for (int i = 0; i < sizeof(PIDS_CALLS)/sizeof(PIDS_CALLS[0]); i++)
 		{
-			obd2.send(IDE_11_BIT, PIDS_CALLS[i], 8);
+			obd2.send(PIDS_CALLS[i], 8);
 		}
 
 		//uint8_t send_buf1[] = { 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };

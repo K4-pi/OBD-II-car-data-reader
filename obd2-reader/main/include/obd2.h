@@ -40,7 +40,7 @@ class Obd2
 
     bool setup();
 
-		void send(uint32_t id, const uint8_t *buffer, uint8_t len);
+		void send(const uint8_t *buffer, uint8_t len);
 };
 
 #endif

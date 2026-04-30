@@ -195,14 +195,14 @@ void Obd2::initialize_twai_frame_conf()
 		
 		m_header_ide = presets[index].ide;
 
+		Obd2::send(check_code, 8);
+
 		if (m_header_ide) 
 		{
-			Obd2::send(IDE_29_BIT, check_code, 8);
 			m_uart.printf("IDE 29-bit, bitrate = %d", presets[index].bitrate);
 		}
 		else 
 		{
-			Obd2::send(IDE_11_BIT, check_code, 8);
 			m_uart.printf("IDE 11-bit, bitrate = %d", presets[index].bitrate);
 		}
 
@@ -238,11 +238,20 @@ esp_err_t Obd2::update_bitrate(uint32_t bitrate)
 	return ESP_OK;
 }
 
-void Obd2::send(uint32_t id, const uint8_t *buffer, uint8_t len)
+void Obd2::send(const uint8_t *buffer, uint8_t len)
 {
 	twai_frame_t msg = {};
-	msg.header.id = id;
 	msg.header.ide = m_header_ide; // true = 29-bit, false = 11-bit
+
+	if (m_header_ide)
+	{
+		msg.header.id = IDE_29_BIT;
+	}
+	else 
+	{
+		msg.header.id = IDE_11_BIT;
+	}
+
 	msg.buffer = (uint8_t *)buffer;
 	msg.buffer_len = len;
 
