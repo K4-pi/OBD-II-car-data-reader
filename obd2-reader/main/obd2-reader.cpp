@@ -6,7 +6,7 @@
 #include <cstring>
 #include <stdio.h>
 
-extern "C" 
+extern "C"
 {
 	#include "freertos/idf_additions.h"
 	#include "freertos/projdefs.h"
@@ -34,7 +34,7 @@ void app_main(void)
 		UART_DATA_8_BITS,
 		UART_PARITY_DISABLE,
 		UART_STOP_BITS_1,
-		UART_HW_FLOWCTRL_DISABLE, // No RTS, CTS pins needed 
+		UART_HW_FLOWCTRL_DISABLE, // No RTS, CTS pins needed
 		122
 	);
 
@@ -43,8 +43,9 @@ void app_main(void)
 	if (!obd2.setup()) uart.printf("Failed to initalize CAN driver\n");
 	else uart.printf("CAN initialized\n");
 
-	while (1) 
+	while (1)
 	{
+
 		vTaskDelay(pdMS_TO_TICKS(500));
 
 		for (int i = 0; i < sizeof(PIDS_CALLS)/sizeof(PIDS_CALLS[0]); i++)
@@ -62,8 +63,8 @@ void app_main(void)
 
 		// then send your OBD-II request
 		// uint8_t send_buf2[] = { 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-		// obd2.send(0x7DF, VEHICLE_SPEED, 8); // 11-bit ide 
-	  // 0x7DF
+		// obd2.send(0x7DF, VEHICLE_SPEED, 8); // 11-bit ide
+	    // 0x7DF
 
 		// vTaskDelay(pdMS_TO_TICKS(500));
 		//obd2.send(0x7DF, COOLANT_TEMP, 8);

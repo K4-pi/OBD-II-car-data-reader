@@ -7,40 +7,43 @@
 
 extern "C"
 {
-  #include "esp_err.h"
-  #include "freertos/FreeRTOS.h"
-  #include "driver/gpio.h"
+    #include "esp_twai_types.h"
+    #include "esp_err.h"
+    #include "freertos/FreeRTOS.h"
+    #include "driver/gpio.h"
 	#include "soc/gpio_num.h"
-  #include "esp_twai.h" 
-  #include "esp_twai_onchip.h"
+    #include "esp_twai.h"
+    #include "esp_twai_onchip.h"
 }
 
-class Obd2 
+class Obd2
 {
-  private:
-    gpio_num_t m_tx;
-    gpio_num_t m_rx;
+    private:
+        gpio_num_t m_tx;
+        gpio_num_t m_rx;
 
-    bool m_header_ide;
+        bool m_header_ide;
 
-		twai_onchip_node_config_t m_node_config;
-		twai_node_handle_t m_node_hdl;
+    	twai_onchip_node_config_t m_node_config;
+    	twai_node_handle_t m_node_hdl;
 
-    esp_err_t update_bitrate(uint32_t bitrate);
+    	twai_event_callbacks_t m_user_callbacks;
 
-  public:
-		Uart m_uart;
-    bool m_initialized;
+        esp_err_t update_bitrate(uint32_t bitrate);
 
-    QueueHandle_t m_obd2_rx_queue_hdl;
+    public:
+    	Uart m_uart;
+        bool m_initialized;
 
-		Obd2(gpio_num_t tx, gpio_num_t rx, Uart uart);
+        QueueHandle_t m_obd2_rx_queue_hdl;
 
-    void initialize_twai_frame_conf();
+    	Obd2(gpio_num_t tx, gpio_num_t rx, Uart uart);
 
-    bool setup();
+        void initialize_twai_frame_conf();
 
-		void send(const uint8_t *buffer, uint8_t len);
+        bool setup();
+
+    	void send(const uint8_t *buffer, uint8_t len);
 };
 
 #endif

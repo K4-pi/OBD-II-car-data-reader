@@ -7,6 +7,7 @@
 
 extern "C"
 {
+    #include "freertos/projdefs.h"
 	#include "hal/twai_types_deprecated.h"
 	#include "portmacro.h"
 	#include "esp_rom_sys.h"
@@ -26,6 +27,7 @@ Obd2::Obd2(gpio_num_t tx, gpio_num_t rx, Uart uart)
 	: m_tx { tx }
 	, m_rx { rx }
 	, m_header_ide { false }
+	, m_user_callbacks {  }
 	, m_uart { uart }
 {
 	m_initialized = false;
@@ -38,9 +40,13 @@ static void rx_task(void *arg)
 
 	while (1)
 	{
+
 		if (xQueueReceive(self->m_obd2_rx_queue_hdl, &rx_frame, portMAX_DELAY))
 		{
 			ESP_DRAM_LOGI("CAN", "ID: 0x%03lX len: %d", rx_frame.header.id, rx_frame.buffer_len);
+
+			uint8_t MODE = rx_frame.buffer[1];
+			uint8_t PID  = rx_frame.buffer[2];
 
 			uint8_t A = rx_frame.buffer[3];
 			uint8_t B = rx_frame.buffer[4];
@@ -48,68 +54,84 @@ static void rx_task(void *arg)
 			uint8_t D = rx_frame.buffer[6];
 			uint8_t E = rx_frame.buffer[7];
 
-			int value; 
+			int value;
 
-			switch (rx_frame.buffer[2]) 
+			if (MODE == POSITIVE_TROUBLE_CODES_RESPONSE)
 			{
-				case CHECK_PIDS:
-					self->m_initialized = true;
-					break;
+			    self->m_uart.printf("Trouble codes\n");
 
-				case ENGINE_SPEED:
-					value = (256*A + B) / 4;
-					self->m_uart.printf("ENGINE_SPEED=%d", value);
-					break;
+				for (int i = 0; i < rx_frame.buffer_len; i++)
+				{
+				    self->m_uart.printf("%d ", rx_frame.buffer[i]);
+				}
 
-				case ENGINE_LOAD:
-					value = (100*A) / 255;
-					self->m_uart.printf("ENGINE_LOAD=%d", value);
-					break;
-
-				case VEHICLE_SPEED:
-					value = A;
-					self->m_uart.printf("VEHICLE_SPEED=%d", value);
-					break;
-
-				case COOLANT_TEMP:
-					value = A - 40;
-					self->m_uart.printf("COOLANT_TEMP=%d", value);
-					break;
-
-				case FUEL_PRESSURE:
-					value = 3*A;
-					self->m_uart.printf("FUEL_PRESSURE=%d", value);
-					break;
-
-				case FUEL_TRIM_STFT1:
-					value = (100*A) / 128 - 100;
-					self->m_uart.printf("STFT1=%d", value);
-					break;
-
-				case FUEL_TRIM_STFT2:
-					value = (100*A) / 128 - 100;
-					self->m_uart.printf("STFT1=%d", value);
-					break;
-
-				case FUEL_TRIM_LTFT1:
-					value = (100*A) / 128 - 100;
-					self->m_uart.printf("STFT1=%d", value);
-					break;
-	
-				case FUEL_TRIM_LTFT2:
-					value = (100*A) / 128 - 100;
-					self->m_uart.printf("STFT1=%d", value);
-					break;	
-
-				case ENGINE_PERECENT_TORQUE:
-					self->m_uart.printf("ENGINE_PERECENT_TORQUE=%d,%d,%d,%d,%d", A-125, B-125, C-125, D-125, E-125);	
-					break;
-
-				default:
-					self->m_uart.printf("ERR=No matching PID");
-					break;
+				self->m_uart.printf("\n");
 			}
-			self->m_uart.printf("\n");
+			else
+			{
+                switch (PID)
+    			{
+    				case CHECK_PIDS:
+                        if (!self->m_initialized)
+                        {
+                            self->m_initialized = true;
+                        }
+    					break;
+
+    				case ENGINE_SPEED:
+    					value = (256*A + B) / 4;
+    					self->m_uart.printf("ENGINE_SPEED=%d\n", value);
+    					break;
+
+    				case ENGINE_LOAD:
+    					value = (100*A) / 255;
+    					self->m_uart.printf("ENGINE_LOAD=%d\n", value);
+    					break;
+
+    				case VEHICLE_SPEED:
+    					value = A;
+    					self->m_uart.printf("VEHICLE_SPEED=%d\n", value);
+    					break;
+
+    				case COOLANT_TEMP:
+    					value = A - 40;
+    					self->m_uart.printf("COOLANT_TEMP=%d\n", value);
+    					break;
+
+    				case FUEL_PRESSURE:
+    					value = 3*A;
+    					self->m_uart.printf("FUEL_PRESSURE=%d\n", value);
+    					break;
+
+    				case FUEL_TRIM_STFT1:
+    					value = (100*A) / 128 - 100;
+    					self->m_uart.printf("STFT1=%d\n", value);
+    					break;
+
+    				case FUEL_TRIM_STFT2:
+    					value = (100*A) / 128 - 100;
+    					self->m_uart.printf("STFT2=%d\n", value);
+    					break;
+
+    				case FUEL_TRIM_LTFT1:
+    					value = (100*A) / 128 - 100;
+    					self->m_uart.printf("LTFT1=%d\n", value);
+    					break;
+
+    				case FUEL_TRIM_LTFT2:
+    					value = (100*A) / 128 - 100;
+    					self->m_uart.printf("LTFT2=%d\n", value);
+    					break;
+
+    				case ENGINE_PERECENT_TORQUE:
+    					self->m_uart.printf("ENGINE_PERECENT_TORQUE=%d,%d,%d,%d,%d\n", A-125, B-125, C-125, D-125, E-125);
+    					break;
+
+    				default:
+    					self->m_uart.printf("ERR=No matching for %X PID\n", PID);
+    					break;
+                }
+			}
 		}
 	}
 }
@@ -124,17 +146,19 @@ static bool twai_rx_callback(twai_node_handle_t handle, const twai_rx_done_event
 
 	Obd2 *self = static_cast<Obd2 *>(user_ctx);
 
-	if (ESP_OK == twai_node_receive_from_isr(handle, &rx_frame)) 
+	if (ESP_OK == twai_node_receive_from_isr(handle, &rx_frame))
 	{
-		if (rx_frame.header.id != 0x7E8 && 
-			(rx_frame.header.id < 0x18DAF100 && rx_frame.header.id > 0x18DAF110)) return false;
+		if (rx_frame.header.id != 0x7E8 &&
+		   (rx_frame.header.id < 0x18DAF100 &&
+			rx_frame.header.id > 0x18DAF1FF))
+		    return false;
 
 		BaseType_t higher_prio_woken = pdFALSE;
 		xQueueSendFromISR(self->m_obd2_rx_queue_hdl, &rx_frame, &higher_prio_woken);
 
 		return higher_prio_woken == pdTRUE;
   }
-	 
+
   return false;
 }
 
@@ -151,15 +175,14 @@ bool Obd2::setup()
 	// TWAI controller driver instance
 	ESP_ERROR_CHECK(twai_new_node_onchip(&m_node_config, &m_node_hdl));
 
-	twai_event_callbacks_t user_cbs = {};
-	user_cbs.on_rx_done = twai_rx_callback;
+	m_user_callbacks.on_rx_done = twai_rx_callback;
 
-	ESP_ERROR_CHECK(twai_node_register_event_callbacks(m_node_hdl, &user_cbs, this));
+	ESP_ERROR_CHECK(twai_node_register_event_callbacks(m_node_hdl, &m_user_callbacks, this));
 
 	// Start TWAI controller
-	ESP_ERROR_CHECK(twai_node_enable(m_node_hdl));	
+	ESP_ERROR_CHECK(twai_node_enable(m_node_hdl));
 
-	m_obd2_rx_queue_hdl = xQueueCreate(16, sizeof(twai_frame_t)); // Create queue for receiving data 	
+	m_obd2_rx_queue_hdl = xQueueCreate(32, sizeof(twai_frame_t)); // Create queue for receiving data
 
 	xTaskCreate(rx_task, "obd2_RX", 4096, this, 5, NULL); // 4096 words -> 16KB
 
@@ -175,38 +198,42 @@ void Obd2::initialize_twai_frame_conf()
 		uint32_t bitrate;
 	};
 
-	can_protocol_t presets[] = {
+	constexpr can_protocol_t presets[] = {
 		{true,  500000},
 		{false, 500000},
 		{true,  250000},
 		{false, 250000},
 	};
-	const size_t presets_len = sizeof(presets) / sizeof(presets[0]);
+	constexpr size_t presets_len = sizeof(presets) / sizeof(presets[0]);
 
-	const uint8_t check_code[] = { 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	constexpr uint8_t check_code[] = { 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 	uint8_t index = 0;
 
 	while (!m_initialized && index < presets_len)
 	{
-		if (uxQueueMessagesWaiting(m_obd2_rx_queue_hdl) != 0) continue;
+        if (uxQueueMessagesWaiting(m_obd2_rx_queue_hdl) != 0) continue;
 
-		Obd2::update_bitrate(presets[index].bitrate);
-		
+        m_uart.printf("Queue = %d\n", uxQueueMessagesWaiting(m_obd2_rx_queue_hdl));
+
+		ESP_ERROR_CHECK(Obd2::update_bitrate(presets[index].bitrate));
+
 		m_header_ide = presets[index].ide;
 
 		Obd2::send(check_code, 8);
 
-		if (m_header_ide) 
+		if (m_header_ide)
 		{
-			m_uart.printf("IDE 29-bit, bitrate = %d", presets[index].bitrate);
+			m_uart.printf("IDE 29-bit, bitrate = %d\n", presets[index].bitrate);
 		}
-		else 
+		else
 		{
-			m_uart.printf("IDE 11-bit, bitrate = %d", presets[index].bitrate);
+			m_uart.printf("IDE 11-bit, bitrate = %d\n", presets[index].bitrate);
 		}
 
 		index++;
+
+		vTaskDelay(pdMS_TO_TICKS(1000)); // Giving ECU time to response before sending another test
 	}
 }
 
@@ -226,10 +253,9 @@ esp_err_t Obd2::update_bitrate(uint32_t bitrate)
 	err = twai_new_node_onchip(&m_node_config, &m_node_hdl);
 	if (ESP_OK != err) return err;
 
-	twai_event_callbacks_t user_cbs = {};
-	user_cbs.on_rx_done = twai_rx_callback;
+	m_user_callbacks.on_rx_done = twai_rx_callback;
 
-	err = twai_node_register_event_callbacks(m_node_hdl, &user_cbs, this);
+	err = twai_node_register_event_callbacks(m_node_hdl, &m_user_callbacks, this);
 	if (ESP_OK != err) return err;
 
 	err = twai_node_enable(m_node_hdl);
@@ -247,7 +273,7 @@ void Obd2::send(const uint8_t *buffer, uint8_t len)
 	{
 		msg.header.id = IDE_29_BIT;
 	}
-	else 
+	else
 	{
 		msg.header.id = IDE_11_BIT;
 	}
@@ -263,8 +289,7 @@ void Obd2::send(const uint8_t *buffer, uint8_t len)
 		twai_node_enable(m_node_hdl);
 		return;
 	}
-	ESP_ERROR_CHECK(err); 
-												 
+	ESP_ERROR_CHECK(err);
+
 	ESP_ERROR_CHECK(twai_node_transmit_wait_all_done(m_node_hdl, -1));  // Wait for transmission to finish
 }
-
