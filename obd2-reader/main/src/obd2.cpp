@@ -40,7 +40,6 @@ static void rx_task(void *arg)
 
 	while (1)
 	{
-
 		if (xQueueReceive(self->m_obd2_rx_queue_hdl, &rx_frame, portMAX_DELAY))
 		{
 			ESP_DRAM_LOGI("CAN", "ID: 0x%03lX len: %d", rx_frame.header.id, rx_frame.buffer_len);
@@ -58,8 +57,6 @@ static void rx_task(void *arg)
 
 			if (MODE == POSITIVE_TROUBLE_CODES_RESPONSE)
 			{
-			    self->m_uart.printf("Trouble codes\n");
-
 				for (int i = 0; i < rx_frame.buffer_len; i++)
 				{
 				    self->m_uart.printf("%d ", rx_frame.buffer[i]);
@@ -98,9 +95,9 @@ static void rx_task(void *arg)
     					self->m_uart.printf("COOLANT_TEMP=%d\n", value);
     					break;
 
-    				case FUEL_PRESSURE:
-    					value = 3*A;
-    					self->m_uart.printf("FUEL_PRESSURE=%d\n", value);
+    				case ENGINE_OIL_TEMP:
+    					value = A - 40;
+    					self->m_uart.printf("OIL_TEMP=%d\n", value);
     					break;
 
     				case FUEL_TRIM_STFT1:

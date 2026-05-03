@@ -13,18 +13,16 @@ extern "C"
 	#include "hal/uart_types.h"
 }
 
-class Uart 
+class Uart
 {
 	private:
 		static constexpr int UART_BUFFER_SIZE = 2048;
-
 		gpio_num_t m_tx, m_rx, m_rts, m_cts;
 
 		QueueHandle_t m_uart_queue;
 		uart_port_t m_uart_num;
-
 		uart_config_t m_uart_config;
-	
+
 	public:
 		Uart
 		(
