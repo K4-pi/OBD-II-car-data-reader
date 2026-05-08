@@ -1,4 +1,5 @@
 #include "../include/uart.h"
+#include "freertos/projdefs.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -15,7 +16,9 @@ extern "C"
   #include "esp_err.h"
 }
 
-Uart::Uart(gpio_num_t tx, gpio_num_t rx, gpio_num_t rts, gpio_num_t cts) 
+// #define BUFFER_SIZE 1024
+
+Uart::Uart(gpio_num_t tx, gpio_num_t rx, gpio_num_t rts, gpio_num_t cts)
 	: m_tx { tx }
 	, m_rx { rx }
 	, m_rts { rts }
@@ -29,8 +32,8 @@ void Uart::setup
 	uart_word_length_t data_bits,
 	uart_parity_t parity,
 	uart_stop_bits_t stop_bits,
-	uart_hw_flowcontrol_t flow_ctrl,
-	uint8_t rx_flow_ctrl_thresh
+	uart_hw_flowcontrol_t flow_ctrl
+	// uint8_t rx_flow_ctrl_thresh
 )
 {
 	m_uart_num = uart_num;
@@ -43,7 +46,7 @@ void Uart::setup
 	m_uart_config.parity = parity;
 	m_uart_config.stop_bits = stop_bits;
 	m_uart_config.flow_ctrl = flow_ctrl;
-	m_uart_config.rx_flow_ctrl_thresh = rx_flow_ctrl_thresh;
+	// m_uart_config.rx_flow_ctrl_thresh = rx_flow_ctrl_thresh;
 
 	ESP_ERROR_CHECK(uart_param_config(m_uart_num, &m_uart_config));
 
@@ -60,13 +63,9 @@ void Uart::printf(const char *fmt, ...) const
   uart_write_bytes(m_uart_num, buf, len);
 }
 
-void Uart::read(uint8_t *buffer)
+void Uart::read(char *buffer, Uart *args)
 {
-	std::size_t length = 0;
-	ESP_ERROR_CHECK(uart_get_buffered_data_len(m_uart_num, &length));
+	std::size_t length = uart_read_bytes(m_uart_num, buffer, 1024 - 1, pdMS_TO_TICKS(1000));
 
-	uart_read_bytes(m_uart_num, &buffer, length, 100);
-}		
-
-
-
+	buffer[length] = '\0';
+}

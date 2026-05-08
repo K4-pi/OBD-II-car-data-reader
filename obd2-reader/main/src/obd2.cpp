@@ -146,7 +146,7 @@ static bool twai_rx_callback(twai_node_handle_t handle, const twai_rx_done_event
 	if (ESP_OK == twai_node_receive_from_isr(handle, &rx_frame))
 	{
 		if (rx_frame.header.id != 0x7E8 &&
-		   (rx_frame.header.id < 0x18DAF100 &&
+		   (rx_frame.header.id < 0x18DAF100 ||
 			rx_frame.header.id > 0x18DAF1FF))
 		    return false;
 

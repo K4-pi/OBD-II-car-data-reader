@@ -39,11 +39,11 @@ class Uart
 			uart_word_length_t data_bits,
 			uart_parity_t parity,
 			uart_stop_bits_t stop_bits,
-			uart_hw_flowcontrol_t flow_ctrl,
-			uint8_t rx_flow_ctrl_thresh
+			uart_hw_flowcontrol_t flow_ctrl
+			// uint8_t rx_flow_ctrl_thresh
 		);
 		void printf(const char *fmt, ...) const;
-		void read(uint8_t *buffer);
+		void read(char *buffer, Uart *args);
 };
 
 #endif
