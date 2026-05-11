@@ -1,4 +1,5 @@
 #include "driver/uart.h"
+#include "hal/gpio_types.h"
 #include "include/uart.h"
 #include "include/obd2.h"
 #include "include/pids_obd2.h"
@@ -24,8 +25,8 @@ constexpr gpio_num_t UART_RX = GPIO_NUM_3;
 constexpr gpio_num_t UART_GPS_TX = GPIO_NUM_17;
 constexpr gpio_num_t UART_GPS_RX = GPIO_NUM_16;
 
-constexpr gpio_num_t CAN_TX = GPIO_NUM_19;
-constexpr gpio_num_t CAN_RX = GPIO_NUM_18;
+constexpr gpio_num_t CAN_TX = GPIO_NUM_21;
+constexpr gpio_num_t CAN_RX = GPIO_NUM_22;
 
 static float geo_to_float(char *str) // TODO: fix, wrong numbers
 {
@@ -71,13 +72,19 @@ void app_main(void)
 
 	char gps_buffer[1024];
 
+	for (int i = 0; i < 2; i++)
+    {
+    	obd2.send(ONE_TIME_PIDS[i], 8);
+    	vTaskDelay(pdMS_TO_TICKS(100));
+    }
+	
 	while (1)
 	{
-		for (int i = 0; i < 10; i++)
-		{
-			obd2.send(PIDS_CALLS[i], 8);
-			vTaskDelay(pdMS_TO_TICKS(100));
-		}
+        for (int i = 0; i < 10; i++)
+    	{
+    		obd2.send(PIDS_CALLS[i], 8);
+    		vTaskDelay(pdMS_TO_TICKS(100));
+    	}
 
 		memset(gps_buffer, 0, 1024); // zeroing buffer
 

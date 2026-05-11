@@ -57,6 +57,8 @@ static void rx_task(void *arg)
 
 			if (MODE == POSITIVE_TROUBLE_CODES_RESPONSE)
 			{
+			    self->m_uart.printf("ERR_CODE=");
+
 				for (int i = 0; i < rx_frame.buffer_len; i++)
 				{
 				    self->m_uart.printf("%d ", rx_frame.buffer[i]);
@@ -64,7 +66,20 @@ static void rx_task(void *arg)
 
 				self->m_uart.printf("\n");
 			}
-			else
+			else if (MODE == INFORMATION_MODE)
+			{
+			    switch (PID)
+    			{
+        			case VIN:
+                        self->m_uart.printf("VIN=Requested\n");
+                        break;
+
+                    default:
+                        self->m_uart.printf("ERR=No matching for %X PID\n", PID);
+                        break;
+    			}
+			}
+			else if (MODE == CURRENT_DATA_MODE)
 			{
                 switch (PID)
     			{

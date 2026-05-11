@@ -1,12 +1,15 @@
 #ifndef PIDS_OBD2_H
 #define PIDS_OBD2_H
 
+#include <cstddef>
 #include <cstdint>
 
 constexpr uint16_t IDE_11_BIT = 0x7DF;
 constexpr uint32_t IDE_29_BIT = 0x18DB33F1;
 
-// SERVICE MODE PIDS (0x01)
+// SHOW CURRENT DATA MODE (0x01)
+constexpr uint8_t CURRENT_DATA_MODE = 0x01;
+
 constexpr uint8_t CHECK_PIDS = 0x00;
 
 constexpr uint8_t ENGINE_SPEED    = 0x0C;
@@ -23,9 +26,17 @@ constexpr uint8_t ENGINE_PERECENT_TORQUE = 0x64;
 
 constexpr uint8_t POSITIVE_TROUBLE_CODES_RESPONSE = 0x43;
 
-// constexpr uint8_t ONE_TIME_PIDS[][8] = {
-    // { 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }  // TROUBLE CODES
-// };
+// REQUEST VEHICLE INFORMATION MODE (0x09)
+constexpr uint8_t INFORMATION_MODE = 0x09;
+
+constexpr uint8_t VIN = 0x02;
+
+constexpr uint8_t ONE_TIME_PIDS[][8] = {
+    { 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },  // TROUBLE CODES
+    { 0x02, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00 }   // VIN CODE
+};
+
+// constexpr std::size_t ONE_TIME_PIDS_SIZE = sizeof(ONE_TIME_PIDS) / sizeof(ONE_TIME_PIDS[0]);
 
 constexpr uint8_t PIDS_CALLS[][8] = {
 	{ 0x02, 0x01, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00 }, // ENGINE_SPEED
@@ -37,7 +48,9 @@ constexpr uint8_t PIDS_CALLS[][8] = {
 	{ 0x02, 0x01, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00 }, // FUEL_TRIM_STFT2
 	{ 0x02, 0x01, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00 }, // FUEL_TRIM_LTFT1
 	{ 0x02, 0x01, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00 }, // FUEL_TRIM_LTFT2
-	{ 0x02, 0x01, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00 }, // ENGINE_PERECENT_TORQUE
+	{ 0x02, 0x01, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00 }  // ENGINE_PERECENT_TORQUE
 };
+
+// constexpr std::size_t PIDS_CALLS_SIZE = sizeof(PIDS_CALLS) / sizeof(PIDS_CALLS[0]);
 
 #endif
