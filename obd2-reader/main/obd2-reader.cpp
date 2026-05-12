@@ -66,7 +66,7 @@ void app_main(void)
 
 	char gps_buffer[GPS_BUFFER_SIZE];
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < ONE_TIME_PIDS_SIZE; i++)
     {
     	obd2.send(ONE_TIME_PIDS[i], 8);
     	vTaskDelay(pdMS_TO_TICKS(100));
@@ -74,7 +74,7 @@ void app_main(void)
 
 	while (1)
 	{
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < PIDS_CALLS_SIZE; i++)
     	{
     		obd2.send(PIDS_CALLS[i], 8);
     		vTaskDelay(pdMS_TO_TICKS(100));

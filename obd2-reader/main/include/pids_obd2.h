@@ -36,7 +36,7 @@ constexpr uint8_t ONE_TIME_PIDS[][8] = {
     { 0x02, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00 }   // VIN CODE
 };
 
-// constexpr std::size_t ONE_TIME_PIDS_SIZE = sizeof(ONE_TIME_PIDS) / sizeof(ONE_TIME_PIDS[0]);
+constexpr std::size_t ONE_TIME_PIDS_SIZE = sizeof(ONE_TIME_PIDS) / sizeof(ONE_TIME_PIDS[0]);
 
 constexpr uint8_t PIDS_CALLS[][8] = {
 	{ 0x02, 0x01, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00 }, // ENGINE_SPEED
@@ -51,6 +51,6 @@ constexpr uint8_t PIDS_CALLS[][8] = {
 	{ 0x02, 0x01, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00 }  // ENGINE_PERECENT_TORQUE
 };
 
-// constexpr std::size_t PIDS_CALLS_SIZE = sizeof(PIDS_CALLS) / sizeof(PIDS_CALLS[0]);
+constexpr std::size_t PIDS_CALLS_SIZE = sizeof(PIDS_CALLS) / sizeof(PIDS_CALLS[0]);
 
 #endif
