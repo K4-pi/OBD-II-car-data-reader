@@ -25,17 +25,17 @@ extern "C"
 constexpr gpio_num_t UART_TX = GPIO_NUM_1;
 constexpr gpio_num_t UART_RX = GPIO_NUM_3;
 
-constexpr gpio_num_t UART_GPS_TX = GPIO_NUM_17;
-constexpr gpio_num_t UART_GPS_RX = GPIO_NUM_16;
+constexpr gpio_num_t UART_GPS_TX = GPIO_NUM_21;
+constexpr gpio_num_t UART_GPS_RX = GPIO_NUM_22;
 
-constexpr gpio_num_t CAN_TX = GPIO_NUM_21;
-constexpr gpio_num_t CAN_RX = GPIO_NUM_22;
+constexpr gpio_num_t CAN_TX = GPIO_NUM_17;
+constexpr gpio_num_t CAN_RX = GPIO_NUM_16;
 
 extern "C"
 void app_main(void)
 {
 	Uart uart_pc(UART_TX, UART_RX);
-	Uart uart_gps(UART_GPS_RX, UART_GPS_TX);
+	Uart uart_gps(UART_GPS_TX, UART_GPS_RX);
 
 	uart_pc.setup
 	(
@@ -69,7 +69,7 @@ void app_main(void)
 	for (int i = 0; i < ONE_TIME_PIDS_SIZE; i++)
     {
     	obd2.send(ONE_TIME_PIDS[i], 8);
-    	vTaskDelay(pdMS_TO_TICKS(100));
+    	vTaskDelay(pdMS_TO_TICKS(200));
     }
 
 	while (1)
@@ -77,7 +77,7 @@ void app_main(void)
         for (int i = 0; i < PIDS_CALLS_SIZE; i++)
     	{
     		obd2.send(PIDS_CALLS[i], 8);
-    		vTaskDelay(pdMS_TO_TICKS(100));
+    		vTaskDelay(pdMS_TO_TICKS(200));
     	}
 
         memset(gps_buffer, 0, GPS_BUFFER_SIZE); // zeroing buffer

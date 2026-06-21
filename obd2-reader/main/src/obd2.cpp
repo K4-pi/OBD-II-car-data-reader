@@ -23,6 +23,12 @@ extern "C"
 static void rx_task(void *arg);
 static bool twai_rx_callback(twai_node_handle_t handle, const twai_rx_done_event_data_t *edata, void *user_ctx);
 
+struct queued_twai_frame_t
+{
+	twai_frame_t frame;
+	uint8_t data[8];
+};
+
 Obd2::Obd2(gpio_num_t tx, gpio_num_t rx, Uart uart)
 	: m_tx { tx }
 	, m_rx { rx }
@@ -36,22 +42,36 @@ Obd2::Obd2(gpio_num_t tx, gpio_num_t rx, Uart uart)
 static void rx_task(void *arg)
 {
 	Obd2 *self = static_cast<Obd2 *>(arg);
-	twai_frame_t rx_frame;
+	queued_twai_frame_t queued_frame = {};
 
 	while (1)
 	{
-		if (xQueueReceive(self->m_obd2_rx_queue_hdl, &rx_frame, portMAX_DELAY))
+		if (xQueueReceive(self->m_obd2_rx_queue_hdl, &queued_frame, portMAX_DELAY))
 		{
+			const twai_frame_t &rx_frame = queued_frame.frame;
+			if (rx_frame.buffer == nullptr || rx_frame.buffer_len < 3)
+			{
+				continue;
+			}
+
 			ESP_DRAM_LOGI("CAN", "ID: 0x%03lX len: %d", rx_frame.header.id, rx_frame.buffer_len);
+			const uint8_t bytes_to_print = rx_frame.buffer_len > 8 ? 8 : rx_frame.buffer_len;
+			self->m_uart.printf("RAW_RX=ID:0x%03lX LEN:%d DATA:", rx_frame.header.id, bytes_to_print);
+			for (uint8_t i = 0; i < bytes_to_print; i++)
+			{
+				self->m_uart.printf("%02X ", rx_frame.buffer[i]);
+			}
+			self->m_uart.printf("\n");
 
 			uint8_t MODE = rx_frame.buffer[1];
 			uint8_t PID  = rx_frame.buffer[2];
+			const uint8_t base_mode = MODE >= 0x40 ? static_cast<uint8_t>(MODE - 0x40) : MODE;
 
-			uint8_t A = rx_frame.buffer[3];
-			uint8_t B = rx_frame.buffer[4];
-			uint8_t C = rx_frame.buffer[5];
-			uint8_t D = rx_frame.buffer[6];
-			uint8_t E = rx_frame.buffer[7];
+			const uint8_t A = rx_frame.buffer_len > 3 ? rx_frame.buffer[3] : 0;
+			const uint8_t B = rx_frame.buffer_len > 4 ? rx_frame.buffer[4] : 0;
+			const uint8_t C = rx_frame.buffer_len > 5 ? rx_frame.buffer[5] : 0;
+			const uint8_t D = rx_frame.buffer_len > 6 ? rx_frame.buffer[6] : 0;
+			const uint8_t E = rx_frame.buffer_len > 7 ? rx_frame.buffer[7] : 0;
 
 			int value;
 
@@ -59,14 +79,14 @@ static void rx_task(void *arg)
 			{
 			    self->m_uart.printf("ERR_CODE=");
 
-				for (int i = 0; i < rx_frame.buffer_len; i++)
+				for (int i = 0; i < bytes_to_print; i++)
 				{
 				    self->m_uart.printf("%d ", rx_frame.buffer[i]);
 				}
 
 				self->m_uart.printf("\n");
 			}
-			else if (MODE == INFORMATION_MODE)
+			else if (base_mode == INFORMATION_MODE)
 			{
 			    switch (PID)
     			{
@@ -79,7 +99,7 @@ static void rx_task(void *arg)
                         break;
     			}
 			}
-			else if (MODE == CURRENT_DATA_MODE)
+			else if (base_mode == CURRENT_DATA_MODE)
 			{
                 switch (PID)
     			{
@@ -150,7 +170,8 @@ static void rx_task(void *arg)
 
 static bool twai_rx_callback(twai_node_handle_t handle, const twai_rx_done_event_data_t *edata, void *user_ctx)
 {
-	uint8_t recv_buff[8];
+	(void)edata;
+	uint8_t recv_buff[8] = {};
 
 	twai_frame_t rx_frame = {};
 	rx_frame.buffer = recv_buff;
@@ -165,8 +186,18 @@ static bool twai_rx_callback(twai_node_handle_t handle, const twai_rx_done_event
 			rx_frame.header.id > 0x18DAF1FF))
 		    return false;
 
+		queued_twai_frame_t queued_frame = {};
+		queued_frame.frame = rx_frame;
+		const uint8_t copy_len = rx_frame.buffer_len > 8 ? 8 : rx_frame.buffer_len;
+		for (uint8_t i = 0; i < copy_len; i++)
+		{
+			queued_frame.data[i] = recv_buff[i];
+		}
+		queued_frame.frame.buffer = queued_frame.data;
+		queued_frame.frame.buffer_len = copy_len;
+
 		BaseType_t higher_prio_woken = pdFALSE;
-		xQueueSendFromISR(self->m_obd2_rx_queue_hdl, &rx_frame, &higher_prio_woken);
+		xQueueSendFromISR(self->m_obd2_rx_queue_hdl, &queued_frame, &higher_prio_woken);
 
 		return higher_prio_woken == pdTRUE;
   }
@@ -194,7 +225,7 @@ bool Obd2::setup()
 	// Start TWAI controller
 	ESP_ERROR_CHECK(twai_node_enable(m_node_hdl));
 
-	m_obd2_rx_queue_hdl = xQueueCreate(32, sizeof(twai_frame_t)); // Create queue for receiving data
+	m_obd2_rx_queue_hdl = xQueueCreate(32, sizeof(queued_twai_frame_t)); // Create queue for receiving data
 
 	xTaskCreate(rx_task, "obd2_RX", 4096, this, 5, NULL); // 4096 words -> 16KB
 
@@ -224,7 +255,11 @@ void Obd2::initialize_twai_frame_conf()
 
 	while (!m_initialized && index < presets_len)
 	{
-        if (uxQueueMessagesWaiting(m_obd2_rx_queue_hdl) != 0) continue;
+        if (uxQueueMessagesWaiting(m_obd2_rx_queue_hdl) != 0)
+		{
+			vTaskDelay(pdMS_TO_TICKS(10));
+			continue;
+		}
 
         m_uart.printf("Queue = %d\n", uxQueueMessagesWaiting(m_obd2_rx_queue_hdl));
 
@@ -245,7 +280,7 @@ void Obd2::initialize_twai_frame_conf()
 
 		index++;
 
-		vTaskDelay(pdMS_TO_TICKS(1000)); // Giving ECU time to response before sending another test
+		vTaskDelay(pdMS_TO_TICKS(2000)); // Giving ECU time to response before sending another test
 	}
 }
 
@@ -297,8 +332,11 @@ void Obd2::send(const uint8_t *buffer, uint8_t len)
 	if (err == ESP_ERR_INVALID_STATE)
 	{
 		ESP_LOGW("CAN", "bus-off recover");
-		twai_node_disable(m_node_hdl);
-		twai_node_enable(m_node_hdl);
+		esp_err_t reenable_err = twai_node_enable(m_node_hdl);
+		if (reenable_err != ESP_OK)
+		{
+			ESP_LOGW("CAN", "recover failed: %s", esp_err_to_name(reenable_err));
+		}
 		return;
 	}
 	ESP_ERROR_CHECK(err);

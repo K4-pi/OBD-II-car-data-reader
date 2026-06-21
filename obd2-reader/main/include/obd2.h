@@ -33,7 +33,7 @@ class Obd2
 
     public:
     	Uart m_uart;
-        bool m_initialized;
+        volatile bool m_initialized;
 
         QueueHandle_t m_obd2_rx_queue_hdl;
 
